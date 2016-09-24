@@ -11,7 +11,7 @@ search_movies <- function(...){
 
 #' @export
 search_episodes <- function(...){
-  search(..., where = "/series")
+  process_episodes( search(..., where = "/series") )
 }
 
 #' @export
@@ -23,18 +23,26 @@ recent <- function( page = 1, category ){
   scrap( sprintf( "http://www.cpasbien.cm/view_cat.php?categorie=%s&page=%d", category, page) )
 }
 
-#' @importFrom dplyr filter
-#' @export
-all_episodes <- function( page = 1){
-  rx <- "^(.*)(S[[:digit:]]{2})(E[[:digit:]]{2})(.*)$"
-  res <- recent(page=page, category = "series") %>%
+process_episodes <- function( data ){
+  rx <- "^(.*)S([[:digit:]]{2})E([[:digit:]]{2})(.*)$"
+  res <- data  %>%
     filter( grepl(rx, title) ) %>%
     mutate(
       show = gsub( rx, "\\1", title),
-      season = gsub( rx, "\\2", title),
-      episode = gsub( rx, "\\3", title)
+      season = as.numeric(gsub( rx, "\\2", title)),
+      episode = as.numeric(gsub( rx, "\\3", title)),
+      VOSTFR = grepl( "VOSTFR", title, ignore.case = TRUE ),
+      FRENCH = grepl( "FRENCH", title, ignore.case = TRUE ),
+      HDTV = grepl( "HDTV", title, ignore.case = TRUE ),
+      BluRay = grepl( "BluRay", title, ignore.case = TRUE )
     )
   res
+}
+
+#' @importFrom dplyr filter
+#' @export
+all_episodes <- function( page = 1){
+  process_episodes( recent(page=page, category = "series") )
 }
 
 #' @export
@@ -71,8 +79,8 @@ details <- function(data, .progress = "text", ... ){
       html <- read_html(link)
       torrent <- html %>%
         html_nodes("a#telecharger") %>%
-        html_attr("href") %>%
-        sprintf( "http://www.cpasbien.cm%s", unlist(.) )
+        html_attr("href")
+      torrent <- sprintf( "http://www.cpasbien.cm%s", unlist(torrent) )
 
       description <- html %>%
         html_nodes("#textefiche p") %>%
