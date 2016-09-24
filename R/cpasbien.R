@@ -1,7 +1,3 @@
-#' @export
-movies <- function( page = 1 ){
-  scrap( sprintf( "http://www.cpasbien.cm/view_cat.php?categorie=films&page=%d", page) )
-}
 
 search <- function(query, page = 0, where = "" ){
   query <- gsub( "[[:space:]]+", "-", query)
@@ -23,11 +19,20 @@ search_all <- function(...){
   search(..., where = "")
 }
 
+recent <- function( page = 1, category ){
+  scrap( sprintf( "http://www.cpasbien.cm/view_cat.php?categorie=%s&page=%d", category, page) )
+}
 
 #' @export
-episodes <- function( page = 1){
-  scrap( sprintf( "http://www.cpasbien.cm/view_cat.php?categorie=series&page=%d", page) )
+all_episodes <- function( page = 1){
+  recent(page=page, category = "series")
 }
+
+#' @export
+all_movies <- function( page = 1 ){
+  recent(page=page, category = "films")
+}
+
 
 #' @importFrom xml2 read_html
 #' @importFrom rvest html_nodes html_attr html_text
