@@ -54,24 +54,30 @@ scrap <- function(url){
 #' @importFrom plyr llply
 #' @export
 details <- function(data, .progress = "text", ... ){
-  res <- llply( data$href, function(link){
-    html <- read_html(link)
-    torrent <- html %>%
-      html_nodes("a#telecharger") %>%
-      html_attr("href") %>%
-      sprintf( "http://www.cpasbien.cm%s", unlist(.) )
+  if( !nrow(data) ){
+    shell <- data_frame( torrent = character(0), description = character(0), poster = character(0))
+    bind_cols( data, shell)
+  } else {
+    res <- llply( data$href, function(link){
+      html <- read_html(link)
+      torrent <- html %>%
+        html_nodes("a#telecharger") %>%
+        html_attr("href") %>%
+        sprintf( "http://www.cpasbien.cm%s", unlist(.) )
 
-    description <- html %>%
-      html_nodes("#textefiche p") %>%
-      tail(1) %>%
-      html_text
+      description <- html %>%
+        html_nodes("#textefiche p") %>%
+        tail(1) %>%
+        html_text
 
-    poster <- html %>%
-      html_nodes( "#bigcover img" ) %>%
-      html_attr("src")
+      poster <- html %>%
+        html_nodes( "#bigcover img" ) %>%
+        html_attr("src")
 
-    data_frame( torrent = torrent, description = description, poster = poster)
-  }, .progress = .progress, ... )
+      data_frame( torrent = torrent, description = description, poster = poster)
+    }, .progress = .progress, ... )
 
-  bind_cols( data, bind_rows(res) )
+    bind_cols( data, bind_rows(res) )
+  }
+
 }
