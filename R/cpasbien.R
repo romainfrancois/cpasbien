@@ -23,9 +23,18 @@ recent <- function( page = 1, category ){
   scrap( sprintf( "http://www.cpasbien.cm/view_cat.php?categorie=%s&page=%d", category, page) )
 }
 
+#' @importFrom dplyr filter
 #' @export
 all_episodes <- function( page = 1){
-  recent(page=page, category = "series")
+  rx <- "^(.*)(S[[:digit:]]{2})(E[[:digit:]]{2})(.*)$"
+  res <- recent(page=page, category = "series") %>%
+    filter( grepl(rx, title) ) %>%
+    mutate(
+      show = gsub( rx, "\\1", title),
+      season = gsub( rx, "\\2", title),
+      episode = gsub( rx, "\\3", title)
+    )
+  res
 }
 
 #' @export
