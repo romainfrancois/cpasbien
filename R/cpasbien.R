@@ -119,7 +119,13 @@ process_episodes <- function( data ){
   res
 }
 
-
+#' Extract movies information
+#'
+#' @param pages pages to retrieve
+#' @param n maximum number of pages
+#' @param .progress see \code{\link[plyr]{llply}}
+#' @param \dots further arguments for \code{\link[plyr]{llply}}
+#'
 #' @export
 get_all_movies <- function( pages = seq_len(n), n = npages("films"), .progress = "text", ... ){
   pages <- pages[ pages <= n]
