@@ -6,6 +6,15 @@ process_size <- function(size){
   round( ifelse( unit == "Mo", n, n*1024 ) )
 }
 
+clean_title <- function(title){
+  title %>%
+    gsub( "FRENCH.*$", "", . ) %>%
+    gsub( "VOSTFR.*$", "", . ) %>%
+    gsub( "PROPER*$", "", . ) %>%
+    gsub( "[[:space:]]+$", "", .)
+}
+
+
 #' @importFrom xml2 read_html
 #' @importFrom rvest html_nodes html_attr html_text
 #' @importFrom magrittr %>%
@@ -15,7 +24,7 @@ scrap <- function(url){
   html <- read_html(url)
   data <- html %>% html_nodes( "#gauche a.titre" )
   href <- data %>% html_attr("href")
-  titles <- data %>% html_text()
+  titles <- data %>% html_text() %>% clean_title
 
   size <- html %>% html_nodes("#gauche .poid") %>% html_text() %>% process_size
 
@@ -46,7 +55,6 @@ scrap_all <- function(category = "films", pages = seq_len(n), n = npages(categor
   bind_rows(res)
 }
 
-
 #' @importFrom dplyr mutate select
 process_movies <- function(data){
   rx      <- "^([^/]+)/(.*)[-]([0-9]{4})([-][0-9]*)?$"
@@ -58,7 +66,6 @@ process_movies <- function(data){
       type     = gsub( rx, "\\1", base ),
       middle   = gsub( rx, "\\2", base),
       has_lang = grepl(lang_rx, middle),
-      title    = if_else(has_lang, gsub(lang_rx, "\\1", middle ), middle),
       lang     = if_else(has_lang, gsub(lang_rx, "\\2", middle), NA_character_ ) ,
       quality  = if_else(has_lang, gsub( "^[-]", "", gsub(lang_rx, "\\3", middle) ), NA_character_ ) ,
       year     = gsub( rx, "\\3", base ),
@@ -107,8 +114,11 @@ search_movies <- function( query, pages = seq(0, n), n = npages_search(query, "f
 }
 
 #' @export
-search_episodes <- function(...){
-  process_episodes( search(..., where = "/series") )
+search_episodes <- function( query, pages = seq(0, n), n = npages_search(query, "series") , ...){
+  pages <- pages[ pages <= n]
+  llply( pages, function(.) search(query, where = "series", page = .) ) %>%
+    bind_rows %>%
+    process_episodes
 }
 
 #' @export
