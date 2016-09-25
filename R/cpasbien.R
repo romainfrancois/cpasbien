@@ -65,27 +65,45 @@ process_movies <- function(data){
       base     = gsub( "^.*/", "", base ),
       torrent  = sprintf( "http://www.cpasbien.cm/telechargement/%s.torrent", base )
       ) %>%
-    select( type, title, year, lang, quality, size, torrent, url = href)
+    select( type, title, year, lang, quality, size, torrent, href)
 
 }
 
 #' @export
 get_all_movies <- function( pages = seq_len(n), n = npages("films"), .progress = "text", ... ){
+  pages <- pages[ pages <= n]
   data <- scrap_all("films", pages = pages, .progress = .progress, ...)
-
+  process_movies(data)
 }
 
+#' @importFrom rvest html_nodes
+npages_search <- function(query, where = "" ){
+  query <- gsub( "[[:space:]]+", "-", query)
+  if( where != "" ) where <- sprintf( "/%s", where)
 
+  url <- sprintf( "http://www.cpasbien.cm/recherche%s/%s.html", where, query)
+  html <- read_html(url)
+  pagination <- html %>% html_nodes("#pagination a") %>% html_text()
+  if( length(pagination) ){
+    as.numeric( pagination[ length(pagination) - 1] )
+  } else 1
 
+}
 
 search <- function(query, page = 0, where = "" ){
   query <- gsub( "[[:space:]]+", "-", query)
+  if( where != "" ) where <- sprintf( "/%s", where)
   scrap( sprintf( "http://www.cpasbien.cm/recherche%s/%s/page-%d", where, query, page) )
 }
 
+#' @importFrom dplyr bind_rows
+#' @importFrom plyr llply
 #' @export
-search_movies <- function(...){
-  search(..., where = "/films")
+search_movies <- function( query, pages = seq(0, n), n = npages_search(query, "films") , ...){
+  pages <- pages[ pages <= n]
+  llply( pages, function(.) search(query, where = "films", page = .) ) %>%
+    bind_rows %>%
+    process_movies
 }
 
 #' @export
