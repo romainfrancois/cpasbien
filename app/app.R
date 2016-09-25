@@ -26,7 +26,7 @@ server <- shinyServer(function(input, output, session) {
     data <- if( query == "" ) {
       NULL
     } else {
-      data <- search_movies(query, .progress = progress_shiny(session) ) %>%
+      data <- search_movies(query, .progress = progress_shiny(session, sprintf("searching for '%s'", query) ) ) %>%
         group_by(title) %>%
         summarise(
           url = list(href),
@@ -74,7 +74,6 @@ server <- shinyServer(function(input, output, session) {
           links
         )
       }
-
     }
 
   })
