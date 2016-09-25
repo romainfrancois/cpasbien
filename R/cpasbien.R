@@ -147,12 +147,19 @@ search <- function(query, page = 0, where = "" ){
   scrap( sprintf( "http://www.cpasbien.cm/recherche%s/%s/page-%d", where, query, page) )
 }
 
+#' Search for movies
+#'
+#' @param query what to search
+#' @param pages which pages to retrieve
+#' @param n total number of pages. The default values retrieves the total number of pages for this query
+#' @param \dots further arguments to pass to \code{\link[plyr]{llply}}, e.g. \code{.progress}
+#'
 #' @importFrom dplyr bind_rows
 #' @importFrom plyr llply
 #' @export
 search_movies <- function( query, pages = seq(0, n), n = npages_search(query, "films") , ...){
   pages <- pages[ pages <= n]
-  llply( pages, function(.) search(query, where = "films", page = .) ) %>%
+  llply( pages, function(.) search(query, where = "films", page = .), ... ) %>%
     bind_rows %>%
     process_movies
 }
