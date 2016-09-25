@@ -55,6 +55,28 @@ scrap_all <- function(category = "films", pages = seq_len(n), n = npages(categor
   bind_rows(res)
 }
 
+#' @importFrom dplyr if_else
+extract_language <- function(base){
+  lang_rx  <- "^(.*)[-](vostfr|truefrench|french)(.*)$"
+  has_lang <- grepl(lang_rx, base)
+  if_else( has_lang, gsub(lang_rx, "\\2", base), NA_character_ )
+}
+
+#' @importFrom dplyr if_else
+extract_quality <- function(base){
+  lang_rx  <- "^(.*)[-](vostfr|truefrench|french)(.*)$"
+  has_lang <- grepl(lang_rx, base)
+  if_else(has_lang, gsub( "^[-]", "", gsub(lang_rx, "\\3", base) ), NA_character_ )
+}
+
+extract_torrent <- function(base){
+  sprintf( "http://www.cpasbien.cm/telechargement/%s.torrent", base )
+}
+
+extract_poster <- function(base){
+  sprintf( "http://www.cpasbien.cm/_pictures/%s.jpg", base )
+}
+
 #' @importFrom dplyr mutate select
 process_movies <- function(data){
   rx      <- "^([^/]+)/(.*)[-]([0-9]{4})([-][0-9]*)?$"
@@ -66,15 +88,37 @@ process_movies <- function(data){
       type     = gsub( rx, "\\1", base ),
       middle   = gsub( rx, "\\2", base),
       has_lang = grepl(lang_rx, middle),
-      lang     = if_else(has_lang, gsub(lang_rx, "\\2", middle), NA_character_ ) ,
-      quality  = if_else(has_lang, gsub( "^[-]", "", gsub(lang_rx, "\\3", middle) ), NA_character_ ) ,
+      lang     = extract_language(middle) ,
+      quality  = extract_quality(middle),
       year     = gsub( rx, "\\3", base ),
       base     = gsub( "^.*/", "", base ),
-      torrent  = sprintf( "http://www.cpasbien.cm/telechargement/%s.torrent", base )
+      torrent  = extract_torrent(base),
+      poster   = extract_poster(base)
       ) %>%
-    select( type, title, year, lang, quality, size, torrent, href)
+    select( type, title, year, lang, quality, size, torrent, poster, href)
 
 }
+
+#' @importFrom dplyr filter
+process_episodes <- function( data ){
+  rx <- "^(.*)S([[:digit:]]{2})E([[:digit:]]{2})(.*)$"
+  res <- data  %>%
+    filter( grepl(rx, title) ) %>%
+    mutate(
+      base     = gsub( "^.*/dl-torrent/series/(.*)[.]html$", "\\1", href ),
+      middle   = gsub( rx, "\\2", base),
+      show     = gsub( rx, "\\1", title),
+      season   = as.numeric(gsub( rx, "\\2", title)),
+      episode  = as.numeric(gsub( rx, "\\3", title)),
+      lang     = extract_language( middle ),
+      quality  = extract_quality( middle ),
+      torrent  = extract_torrent(base),
+      poster   = extract_poster(base)
+    ) %>%
+    select( show, season, episode, lang, quality, size, torrent, poster, href )
+  res
+}
+
 
 #' @export
 get_all_movies <- function( pages = seq_len(n), n = npages("films"), .progress = "text", ... ){
@@ -113,74 +157,34 @@ search_movies <- function( query, pages = seq(0, n), n = npages_search(query, "f
     process_movies
 }
 
+#' Search from series episodes
+#'
+#' @param query what to search
+#' @param pages which pages to retrieve
+#' @param n total number of pages. The default values retrieves the total number of pages for this query
+#' @param \dots further arguments to pass to \code{\link[plyr]{llply}}, e.g. \code{.progress}
+#'
+#' @importFrom plyr llply
+#' @importFrom dplyr bind_rows
 #' @export
 search_episodes <- function( query, pages = seq(0, n), n = npages_search(query, "series") , ...){
   pages <- pages[ pages <= n]
-  llply( pages, function(.) search(query, where = "series", page = .) ) %>%
+  llply( pages, function(.) search(query, where = "series", page = .), ... ) %>%
     bind_rows %>%
     process_episodes
 }
 
+#' Extract description
+#'
+#' @param url cpasbien url where to extract the description from
+#'
+#' @importFrom xml2 read_html
+#' @importFrom rvest html_nodes
+#' @importFrom utils tail
 #' @export
-search_all <- function(...){
-  search(..., where = "")
-}
-
-process_episodes <- function( data ){
-  rx <- "^(.*)S([[:digit:]]{2})E([[:digit:]]{2})(.*)$"
-  res <- data  %>%
-    filter( grepl(rx, title) ) %>%
-    mutate(
-      show = gsub( rx, "\\1", title),
-      season = as.numeric(gsub( rx, "\\2", title)),
-      episode = as.numeric(gsub( rx, "\\3", title)),
-      VOSTFR = grepl( "VOSTFR", title, ignore.case = TRUE ),
-      FRENCH = grepl( "FRENCH", title, ignore.case = TRUE ),
-      HDTV = grepl( "HDTV", title, ignore.case = TRUE ),
-      BluRay = grepl( "BluRay", title, ignore.case = TRUE )
-    )
-  res
-}
-
-#' @importFrom dplyr filter
-#' @export
-get_episodes <- function( page = 1){
-  process_episodes( get_list(page=page, category = "series") )
-}
-
-#' @export
-get_movies <- function( page = 1 ){
-  get_list(page=page, category = "films")
-}
-
-#' @importFrom dplyr bind_cols bind_rows
-#' @importFrom plyr llply
-#' @export
-details <- function(data, .progress = "text", ... ){
-  if( !nrow(data) ){
-    shell <- data_frame( torrent = character(0), description = character(0), poster = character(0))
-    bind_cols( data, shell)
-  } else {
-    res <- llply( data$href, function(link){
-      html <- read_html(link)
-      torrent <- html %>%
-        html_nodes("a#telecharger") %>%
-        html_attr("href")
-      torrent <- sprintf( "http://www.cpasbien.cm%s", unlist(torrent) )
-
-      description <- html %>%
-        html_nodes("#textefiche p") %>%
-        tail(1) %>%
-        html_text
-
-      poster <- html %>%
-        html_nodes( "#bigcover img" ) %>%
-        html_attr("src")
-
-      data_frame( torrent = torrent, description = description, poster = poster)
-    }, .progress = .progress, ... )
-
-    bind_cols( data, bind_rows(res) )
-  }
-
+extract_description <- function(url){
+  read_html(url) %>%
+    html_nodes("#textefiche p") %>%
+    tail(1) %>%
+    html_text
 }

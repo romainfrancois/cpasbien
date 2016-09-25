@@ -3,7 +3,7 @@ Type: Package
 Title: Scrapping data from cpasbien
 Version: 0.0.0
 Authors@R: person("Romain", "Francois", email = "romain@r-enthusiasts.com", role = c("aut", "cre"))
-Description: Scrapping data from cpasbien
+Description: Scrapping data from cpasbien.
 License: MIT + file LICENSE
 Imports:
     rvest,
