@@ -7,8 +7,6 @@ library(jsonlite)
 ui <- shinyUI(fluidPage(
 
   sidebarPanel(
-    textInput( "search", label = "" ),
-    actionButton( "search_button" , label = "search movies"),
     htmlOutput( "movie_description")
   ),
   mainPanel(
@@ -20,31 +18,28 @@ ui <- shinyUI(fluidPage(
 # Define server logic required to draw a histogram
 server <- shinyServer(function(input, output, session) {
 
-  search_results <- reactive({
-    input$search_button
-    query <- isolate(input$search)
-    data <- if( query == "" ) {
-      NULL
-    } else {
-      data <- search_movies(query, .progress = progress_shiny(session, sprintf("searching for '%s'", query) ) ) %>%
-        group_by(title) %>%
-        summarise(
-          url = list(href),
-          img = first(poster),
-          torrent = list(torrent),
-          quality = list(quality),
-          lang = list(lang),
-          size = list(size)
-        )
-      data
-    }
+  movies_results <- reactive({
+    data <- movies %>%
+      group_by(title) %>%
+      summarise(
+        img = first(poster),
+        type = first(type),
+        url = list(href),
+        torrent = list(torrent),
+        quality = list(quality),
+        lang = list(lang),
+        size = list(size),
+        up = list(up),
+        down = list(down)
+      ) %>%
+      mutate( index = row_number() )
     data
   })
 
   output$movie_description <- renderUI({
     index <- as.numeric(input$img_clicked)
     if( length(index) ){
-      data <- search_results()
+      data <- movies_results()
 
       if( !is.null(data) && nrow(data) > 0){
         data <- data[index, ]
@@ -57,12 +52,12 @@ server <- shinyServer(function(input, output, session) {
         lang <- unlist(data$lang[[1]])
         size <- unlist(data$size[[1]])
 
-        links <- do.call( div, lapply( seq_along(torrents), function(i){
+        links <- lapply( seq_along(torrents), function(i){
           tagList(
             tags$a( href = torrents[i], sprintf( "%s - %s %d Mb", quality[i], lang[i], size[i]) ),
             tags$br()
           )
-        }))
+        })
 
         tagList(
           tags$br(),
@@ -71,7 +66,7 @@ server <- shinyServer(function(input, output, session) {
           tags$img( src = img ),
           tags$h4("links"),
 
-          links
+          do.call( div, links )
         )
       }
     }
@@ -79,15 +74,27 @@ server <- shinyServer(function(input, output, session) {
   })
 
   output$search_results <- renderUI({
-    data <- search_results()
+    data <- movies_results()
+
+    categories <- unique(data$type)
+
     if( !is.null(data) ){
-      res <- lapply( seq_len(nrow(data)), function(i) {
-        tags$img(
-          src=data$img[i], width = 100,
-          onclick = sprintf( 'Shiny.onInputChange( "img_clicked", %d )', i )
-        )
-      } )
-      do.call( div, res)
+
+      res <- lapply( categories, function(categ){
+        d <- filter( data, type == categ ) %>%
+          group_by(title) %>%
+          mutate( sum_up = sum(unlist(up)) ) %>%
+          arrange( desc(sum_up) )
+
+        x <- lapply( seq_len(nrow(d)), function(i) {
+          tags$img(
+            src=d$img[i], width = 80,
+            onclick = sprintf( 'Shiny.onInputChange( "img_clicked", %d )', d$index[i] )
+          )
+        })
+        tabPanel( categ, do.call( div, x ) )
+      })
+      do.call( tabsetPanel, res )
     }
   })
 
@@ -95,4 +102,3 @@ server <- shinyServer(function(input, output, session) {
 
 # Run the application
 shinyApp(ui = ui, server = server)
-
