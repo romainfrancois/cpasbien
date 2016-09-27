@@ -8,6 +8,7 @@ process_size <- function(size){
 
 clean_title <- function(title){
   title %>%
+    gsub( "PROPER *FRENCH.*$", "", .) %>%
     gsub( "TRUEFRENCH.*$", "", .) %>%
     gsub( "FRENCH.*$", "", . ) %>%
     gsub( "VOSTFR.*$", "", . ) %>%
