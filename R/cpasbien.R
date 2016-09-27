@@ -21,14 +21,17 @@ clean_title <- function(title){
 #' @importFrom tibble data_frame
 #' @importFrom plyr llply
 scrap <- function(url){
-  html <- read_html(url)
-  data <- html %>% html_nodes( "#gauche a.titre" )
-  href <- data %>% html_attr("href")
+  html    <- read_html(url)
+  data   <- html %>% html_nodes( "#gauche a.titre" )
+  href   <- data %>% html_attr("href")
   titles <- data %>% html_text() %>% clean_title
 
   size <- html %>% html_nodes("#gauche .poid") %>% html_text() %>% process_size
 
-  data_frame( title = titles, href = href, size = size)
+  up   <- html %>% html_nodes( ".seed_ok") %>% html_text() %>% as.numeric
+  down <- html %>% html_nodes( ".down") %>% html_text() %>% as.numeric
+
+  data_frame( title = titles, href = href, size = size, up = up, down = down )
 }
 
 get_list <- function( page = 1, category ){
@@ -95,7 +98,7 @@ process_movies <- function(data){
       torrent  = extract_torrent(base),
       poster   = extract_poster(base)
       ) %>%
-    select( type, title, year, lang, quality, size, torrent, poster, href)
+    select( type, title, year, lang, quality, size, up, down, torrent, poster, href)
 
 }
 
@@ -115,7 +118,7 @@ process_episodes <- function( data ){
       torrent  = extract_torrent(base),
       poster   = extract_poster(base)
     ) %>%
-    select( show, season, episode, lang, quality, size, torrent, poster, href )
+    select( show, season, episode, lang, quality, size, up, down, torrent, poster, href )
   res
 }
 
@@ -131,6 +134,20 @@ get_all_movies <- function( pages = seq_len(n), n = npages("films"), .progress =
   pages <- pages[ pages <= n]
   data <- scrap_all("films", pages = pages, .progress = .progress, ...)
   process_movies(data)
+}
+
+#' Extract series information
+#'
+#' @param pages pages to retrieve
+#' @param n maximum number of pages
+#' @param .progress see \code{\link[plyr]{llply}}
+#' @param \dots further arguments for \code{\link[plyr]{llply}}
+#'
+#' @export
+get_all_episodes <- function( pages = seq_len(n), n = npages("series"), .progress = "text", ... ){
+  pages <- pages[ pages <= n]
+  data <- scrap_all("series", pages = pages, .progress = .progress, ...)
+  process_episodes(data)
 }
 
 #' @importFrom rvest html_nodes
