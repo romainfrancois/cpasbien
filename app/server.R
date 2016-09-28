@@ -4,13 +4,6 @@ library(dplyr)
 
 shinyServer(function(input, output, session) {
 
-  output$purrple <- renderImage({
-    list(
-      src = system.file( "app", "www", "purrple.png", package = "cpasbien" ),
-      width = 100,
-      height = 100)
-  }, deleteFile = FALSE)
-
   movies_results <- reactive({
     data <- movies %>%
       group_by(title) %>%
