@@ -1,22 +1,8 @@
 library(shiny)
 library(cpasbien)
 library(dplyr)
-library(jsonlite)
 
-# Define UI for application that draws a histogram
-ui <- shinyUI(fluidPage(
-
-  sidebarPanel(
-    htmlOutput( "movie_description")
-  ),
-  mainPanel(
-    htmlOutput( "search_results" )
-  )
-
-))
-
-# Define server logic required to draw a histogram
-server <- shinyServer(function(input, output, session) {
+shinyServer(function(input, output, session) {
 
   movies_results <- reactive({
     data <- movies %>%
@@ -99,6 +85,3 @@ server <- shinyServer(function(input, output, session) {
   })
 
 })
-
-# Run the application
-shinyApp(ui = ui, server = server)
