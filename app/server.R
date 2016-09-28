@@ -4,6 +4,13 @@ library(dplyr)
 
 shinyServer(function(input, output, session) {
 
+  output$purrple <- renderImage({
+    list(
+      src = system.file( "app", "www", "purrple.png", package = "cpasbien" ),
+      width = 100,
+      height = 100)
+  }, deleteFile = FALSE)
+
   movies_results <- reactive({
     data <- movies %>%
       group_by(title) %>%
@@ -26,6 +33,7 @@ shinyServer(function(input, output, session) {
     index <- as.numeric(input$img_clicked)
     if( length(index) ){
       data <- movies_results()
+      if( is.null(data)) return()
 
       if( !is.null(data) && nrow(data) > 0){
         data <- data[index, ]
@@ -61,6 +69,7 @@ shinyServer(function(input, output, session) {
 
   output$search_results <- renderUI({
     data <- movies_results()
+    if( is.null(data) ) return()
 
     categories <- unique(data$type)
 
