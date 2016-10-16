@@ -1,8 +1,11 @@
 library(shiny)
 library(cpasbien)
 library(dplyr)
+library(purrpleWidgets)
 
 shinyServer(function(input, output, session) {
+
+  output$meow <- renderPurrpleCat(session)
 
   movies_results <- reactive({
     data <- movies %>%

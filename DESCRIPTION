@@ -5,6 +5,8 @@ Version: 0.0.1
 Authors@R: person("Romain", "Francois", email = "romain@r-enthusiasts.com", role = c("aut", "cre"))
 Description: Scrapping data from cpasbien.
 License: MIT + file LICENSE
+Suggests: 
+  purrpleWidgets (>= 0.0.1)
 Imports:
     rvest,
     magrittr,
