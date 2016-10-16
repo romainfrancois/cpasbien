@@ -56,7 +56,7 @@ shinyServer(function(input, output, session) {
           tags$img( src = img ),
           tags$h4("links"),
 
-          do.call( div, links )
+          div( links )
         )
       }
     }
@@ -83,7 +83,7 @@ shinyServer(function(input, output, session) {
             onclick = sprintf( 'Shiny.onInputChange( "img_clicked", %d )', d$index[i] )
           )
         })
-        tabPanel( categ, do.call( div, x ) )
+        tabPanel( categ, div(x) )
       })
       do.call( tabsetPanel, res )
     }
