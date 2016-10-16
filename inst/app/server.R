@@ -5,8 +5,6 @@ library(purrpleWidgets)
 
 shinyServer(function(input, output, session) {
 
-  output$meow <- renderPurrpleCat(session)
-
   movies_results <- reactive({
     data <- movies %>%
       group_by(title) %>%

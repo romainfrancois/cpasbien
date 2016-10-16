@@ -1,8 +1,9 @@
-library(shiny)
+library("shiny")
+library("purrpleWidgets")
 
 shinyUI(fluidPage(
 
-  purrpleCatOutput("meow"),
+  purrple_logo(),
 
   sidebarPanel(
     htmlOutput( "movie_description")
