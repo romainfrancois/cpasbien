@@ -1,5 +1,5 @@
 library("shiny")
-library("purrpleWidgets")
+library("purrple")
 
 shinyUI(fluidPage(
   sidebarPanel(

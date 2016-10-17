@@ -6,7 +6,7 @@ Authors@R: person("Romain", "Francois", email = "romain@r-enthusiasts.com", role
 Description: Scrapping data from cpasbien.
 License: MIT + file LICENSE
 Suggests: 
-  purrpleWidgets (>= 0.0.1)
+  purrple (>= 0.0.3)
 Imports:
     rvest,
     magrittr,

@@ -1,7 +1,7 @@
 library(shiny)
 library(cpasbien)
 library(dplyr)
-library(purrpleWidgets)
+library(purrple)
 
 shinyServer(function(input, output, session) {
 
