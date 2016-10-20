@@ -1,7 +1,9 @@
 library("shiny")
 library("purrple")
 
-shinyUI(fluidPage(
+page <- purrplePage(fluidPage)
+shinyUI(page(
+
   sidebarPanel(
     htmlOutput( "movie_description")
   ),
